@@ -1,4 +1,4 @@
-import React,  {useState} from "react";
+import  {useState} from "react";
 import { AiFillStar } from 'react-icons/ai';
 import { useParams } from 'react-router-dom';
 import { BASE_URL, token } from "../../config";
@@ -25,9 +25,9 @@ const Feedbackform = () => {
             }
 
                             
-            const res = await fetch(`${BASE_URL}/doctors/${id}/reviews/reviews`, {
-                method: 'post',
-                headers: {
+            const res = await fetch(`${BASE_URL}/doctors/${id}/reviews`, {
+                method: 'POST',
+                headers:{
                     'Content-Type':'application/json',
                     Authorization: `Bearer ${token}`,
                 },
@@ -45,9 +45,9 @@ const Feedbackform = () => {
 
         }catch (error) {
         setLoading(false)
-        toast.success(result.message);
+        toast.success(error.message);
         }
-    };
+    }; 
 
     return (
         <form action=''>
