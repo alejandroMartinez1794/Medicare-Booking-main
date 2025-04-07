@@ -100,6 +100,7 @@ const Dashboard = () => {
                                     <Appointments appointments={data.appointments}/>
                                 )}
                                 {tab === 'settings' && <Profile doctorData={data}/>}
+                                {tab === 'doctor-insights' && <DoctorInsights />}
                             </div>
 
                         </div>
