@@ -7,6 +7,9 @@ import authRoute from './Routes/auth.js';
 import userRoute from './Routes/user.js';
 import doctorRoute from './Routes/doctor.js';
 import reviewRoute from './Routes/review.js';
+import calendarRoutes from './Routes/calendar.js';
+import bookingRoute from './Routes/booking.js';
+
 
 
 dotenv.config()
@@ -45,7 +48,9 @@ app.use('/api/v1/auth', authRoute); // http://localhost:5000/api/v1/auth/registe
 app.use('/api/v1/users', userRoute);
 app.use('/api/v1/doctors', doctorRoute);
 app.use('/api/v1/reviews', reviewRoute);
-
+app.use('/api/v1/calendar', calendarRoutes);
+app.use('/api/v1/bookings', bookingRoute);
+    
 
 
 
