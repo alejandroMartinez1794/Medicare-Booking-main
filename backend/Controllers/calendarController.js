@@ -119,3 +119,97 @@ export const createCalendarEvent = async (req, res) => {
     res.status(500).json({ error: 'No se pudo crear el evento en Google Calendar' });
   }
 };
+
+/**
+ * Lista los eventos próximos del usuario autenticado
+ */
+export const getCalendarEvents = async (req, res) => {
+  const userId = req.user?.id || '6611ea1e508ab5e924c4e7aa';
+
+  try {
+    const calendar = await getOAuthClientWithUserTokens(userId);
+
+    const response = await calendar.events.list({
+      calendarId: 'primary',
+      timeMin: new Date().toISOString(),
+      maxResults: 10,
+      singleEvents: true,
+      orderBy: 'startTime',
+    });
+
+    res.status(200).json({ events: response.data.items });
+  } catch (err) {
+    console.error('Error al obtener eventos:', err);
+    res.status(500).json({ error: 'No se pudieron obtener los eventos' });
+  }
+};
+
+/**
+ * Actualiza un evento existente en Google Calendar
+ */
+export const updateCalendarEvent = async (req, res) => {
+  const userId = req.user?.id || '6611ea1e508ab5e924c4e7aa';
+  const { eventId, summary, description, startTime, endTime } = req.body;
+
+  try {
+    const calendar = await getOAuthClientWithUserTokens(userId);
+
+    const response = await calendar.events.update({
+      calendarId: 'primary',
+      eventId,
+      requestBody: {
+        summary,
+        description,
+        start: { dateTime: startTime, timeZone: 'America/Bogota' },
+        end: { dateTime: endTime, timeZone: 'America/Bogota' },
+      },
+    });
+
+    res.status(200).json({ message: '✏️ Evento actualizado', event: response.data });
+  } catch (err) {
+    console.error('Error al actualizar evento:', err);
+    res.status(500).json({ error: 'No se pudo actualizar el evento' });
+  }
+};
+
+/**
+ * Elimina un evento del calendario del usuario
+ */
+export const deleteCalendarEvent = async (req, res) => {
+  const userId = req.user?.id || '6611ea1e508ab5e924c4e7aa';
+  const { eventId } = req.params;
+
+  try {
+    const calendar = await getOAuthClientWithUserTokens(userId);
+
+    await calendar.events.delete({
+      calendarId: 'primary',
+      eventId,
+    });
+
+    res.status(200).json({ message: '🗑️ Evento eliminado' });
+  } catch (err) {
+    console.error('Error al eliminar evento:', err);
+    res.status(500).json({ error: 'No se pudo eliminar el evento' });
+  }
+};
+
+/**
+ * Verifica si el usuario tiene tokens válidos
+ */
+export const checkGoogleAuthStatus = async (req, res) => {
+  const userId = req.user?.id || '6611ea1e508ab5e924c4e7aa';
+
+  try {
+    const tokenData = await GoogleToken.findOne({ userId });
+
+    if (!tokenData) {
+      return res.status(404).json({ connected: false, message: 'No conectado a Google Calendar' });
+    }
+
+    res.status(200).json({ connected: true, message: 'Usuario conectado a Google Calendar' });
+  } catch (err) {
+    console.error('Error al verificar estado de conexión:', err);
+    res.status(500).json({ error: 'No se pudo verificar el estado de conexión' });
+  }
+};
