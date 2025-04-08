@@ -1,45 +1,104 @@
-import Booking from '../models/BookingSchema.js';
-import { createGoogleCalendarEvent } from './calendarController.js';
+// backend/Controllers/bookingController.js
+import Booking from '../Models/BookingSchema.js';
+import { createCalendarEvent } from './calendarController.js';
 
 /**
- * Crea una nueva reserva y agenda un evento en Google Calendar automáticamente
+ * 📅 Crear nueva cita médica
  */
 export const createBooking = async (req, res) => {
-  const { userId, doctorId, appointmentDate, appointmentTime, reason } = req.body;
-
   try {
-    // 🧠 1. Crear la reserva en la base de datos
-    const newBooking = new Booking({
+    const { doctorId, date, time, motivoConsulta } = req.body;
+    const userId = req.user.id;
+
+    // 1. 🕒 Construir rangos de hora para el evento
+    const startDateTime = new Date(`${date}T${time}:00`);
+    const endDateTime = new Date(startDateTime.getTime() + 30 * 60 * 1000); // 30 min
+
+    // 2. 🗓️ Crear evento en Google Calendar
+    const calendarReq = {
+      body: {
+        userId,
+        summary: 'Cita médica',
+        description: `Consulta médica con el doctor ID: ${doctorId}. Motivo: ${motivoConsulta}`,
+        startTime: startDateTime.toISOString(),
+        endTime: endDateTime.toISOString(),
+      },
+    };
+
+    // Creamos un mock de `res` para capturar el resultado
+    let calendarEventId = null;
+    const calendarRes = {
+      status: (code) => ({
+        json: (data) => {
+          if (data.eventId) {
+            calendarEventId = data.eventId;
+          }
+          return { status: code, ...data };
+        },
+      }),
+    };
+
+    await createCalendarEvent(calendarReq, calendarRes);
+
+    // 3. 📝 Crear la cita en MongoDB incluyendo el ID del evento
+    const nuevaCita = await Booking.create({
       user: userId,
       doctor: doctorId,
-      date: appointmentDate,
-      time: appointmentTime,
-      reason,
+      appointmentDate: startDateTime,
+      reason: motivoConsulta,
+      calendarEventId, // <- Guardamos el ID del evento
     });
 
-    const savedBooking = await newBooking.save();
-
-    // ⏰ 2. Convertir fecha y hora a formato ISO para Google Calendar
-    const startDateTime = new Date(`${appointmentDate}T${appointmentTime}:00`);
-    const endDateTime = new Date(startDateTime.getTime() + 30 * 60 * 1000); // cita de 30 minutos
-
-    // 📅 3. Crear evento en Google Calendar
-    const calendarEvent = await createGoogleCalendarEvent({
-      summary: `Cita médica con el Dr./Dra.`,
-      description: reason || 'Consulta médica programada desde el sistema Medicare Booking',
-      startTime: startDateTime.toISOString(),
-      endTime: endDateTime.toISOString(),
-    });
-
-    console.log('🗓️ Evento creado en Google Calendar:', calendarEvent.id);
-
+    // 4. ✅ Enviar respuesta
     res.status(201).json({
-      message: 'Reserva creada y evento sincronizado con Google Calendar',
-      booking: savedBooking,
-      calendarEventId: calendarEvent.id,
+      message: '✅ Cita creada exitosamente',
+      cita: nuevaCita,
+      googleCalendarEventId: calendarEventId,
     });
+
   } catch (error) {
-    console.error('❌ Error al crear la reserva:', error);
-    res.status(500).json({ error: 'No se pudo crear la reserva' });
+    console.error('❌ Error al crear cita:', error);
+    res.status(500).json({ error: 'Error al crear la cita' });
+  }
+};
+
+/**
+ * 🗑️ Cancelar cita médica (y evento en Google Calendar si aplica)
+ */
+export const cancelBooking = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { bookingId } = req.params;
+
+    const booking = await Booking.findById(bookingId);
+
+    if (!booking) {
+      return res.status(404).json({ error: 'Cita no encontrada' });
+    }
+
+    if (booking.user.toString() !== userId) {
+      return res.status(403).json({ error: 'No autorizado para cancelar esta cita' });
+    }
+
+    // Si tiene un evento en Google Calendar, lo eliminamos
+    if (booking.calendarEventId) {
+      const deleteEventReq = {
+        user: { id: userId },
+        params: { eventId: booking.calendarEventId },
+      };
+      const deleteEventRes = {
+        status: () => ({ json: () => {} }), // mock básico
+      };
+      await deleteCalendarEvent(deleteEventReq, deleteEventRes);
+    }
+
+    // Eliminamos la cita de la base de datos
+    await Booking.findByIdAndDelete(bookingId);
+
+    res.status(200).json({ message: '✅ Cita cancelada exitosamente' });
+
+  } catch (error) {
+    console.error('❌ Error al cancelar la cita:', error);
+    res.status(500).json({ error: 'Error al cancelar la cita' });
   }
 };

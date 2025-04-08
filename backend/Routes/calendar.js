@@ -8,7 +8,6 @@ import {
   getCalendarEvents,
   updateCalendarEvent,
   deleteCalendarEvent,
-  checkGoogleAuthStatus
 } from '../Controllers/calendarController.js';
 
 const router = express.Router();
@@ -33,7 +32,10 @@ router.put('/calendar/update', updateCalendarEvent);
 // Eliminar evento por ID
 router.delete('/calendar/delete/:eventId', deleteCalendarEvent);
 
-// Verificar si el usuario está conectado con Google Calendar
-router.get('/calendar/status', checkGoogleAuthStatus);
+// Ruta para manejar el callback de Google OAuth2
+
+
+router.get('/auth/google/callback', handleGoogleCallback);
+
 
 export default router;

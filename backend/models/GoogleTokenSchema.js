@@ -14,4 +14,4 @@ const GoogleTokenSchema = new mongoose.Schema({
   expiry_date: Number,
 }, { timestamps: true });
 
-export default mongoose.model('GoogleToken', GoogleTokenSchema);
+export default mongoose.models.GoogleToken || mongoose.model('GoogleToken', GoogleTokenSchema);
