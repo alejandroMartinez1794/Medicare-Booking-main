@@ -1,62 +1,46 @@
-import jwt from "jsonwebtoken";
+import jwt from 'jsonwebtoken';
 import Doctor from '../models/DoctorSchema.js';
-import User from "../Models/UserSchema.js";
+import User from '../Models/UserSchema.js';
 
-
+// Middleware para verificar el token JWT
 export const authenticate = async (req, res, next) => {
-    
-    // Get the token from the header
-    const authToken = req.headers.authorization;
+  const authToken = req.headers.authorization;
 
-    // Check token if exists
+  if (!authToken || !authToken.startsWith('Bearer ')) {
+    return res.status(401).json({ success: false, message: 'No token, authorization denied' });
+  }
 
-    if (!authToken || !authToken.startsWith("Bearer ")) {
-        return res
-        .status(401)
-        .json({ success: false, message: "No token, authorization denied" });
-    }
+  try {
+    const token = authToken.split(' ')[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
 
-    try {
-        const token = authToken.split(" ")[1];
-
-        //verify token
-
-        const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
-
-        req.user = decoded
-        req.role = decoded.role
-
-        next(); //must be called the next function
-    }   catch (err) { 
-        if (err.name === 'TokenExpiredError') {
-            return res.status(401).json({ message: "Token expired" })
-        }
-
-        return res.status(401).json({success:false, message: "Invalid token" });
-    }    
-};
-
-export const restrict = roles => async (req, res, next)  => { 
-    // roles is an array of roles that are allowed to access the route
-    const userId = req.userId
-    // Get the user from the database
-    let user;
-    // Check if the user is a patient or a doctor
-    const patient = await User.findById(userId)
-    const doctor = await Doctor.findById(userId)
-
-    if (patient) {
-        user = patient
-    }
-    if (doctor) {
-        user = doctor
-    }
-    // Check if the user has the role to access the route
-    if (!roles.includes(req.user.role)) {
-        return res
-        .status(403)
-        .json({ success: false, message: "You are not authorized" })
-    }  
+    req.user = decoded;        // Guardamos el payload completo del token
+    req.role = decoded.role;   // Acceso directo al rol
 
     next();
-} 
+  } catch (err) {
+    if (err.name === 'TokenExpiredError') {
+      return res.status(401).json({ success: false, message: 'Token expired' });
+    }
+
+    return res.status(401).json({ success: false, message: 'Invalid token' });
+  }
+};
+
+// Middleware para restringir el acceso según el rol (paciente o doctor)
+export const restrict = (roles) => async (req, res, next) => {
+  const userId = req.user._id; // Asegúrate de firmar el token con _id
+
+  let user;
+  const patient = await User.findById(userId);
+  const doctor = await Doctor.findById(userId);
+
+  if (patient) user = patient;
+  if (doctor) user = doctor;
+
+  if (!roles.includes(req.user.role)) {
+    return res.status(403).json({ success: false, message: 'You are not authorized' });
+  }
+
+  next();
+};

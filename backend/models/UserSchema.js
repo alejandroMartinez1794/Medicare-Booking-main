@@ -8,8 +8,8 @@ const UserSchema = new mongoose.Schema({
   photo: { type: String }, // Puedes renombrarlo a "profilePicture" si prefieres
   role: {
     type: String,
-    enum: ["patient", "admin"],
-    default: "patient",
+    enum: ["paciente", "admin", "doctor"],
+    default: "paciente",
   },
   gender: { type: String, enum: ["Male", "female", "other"] },
   bloodType: { type: String },

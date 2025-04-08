@@ -1,5 +1,5 @@
 // backend/Controllers/bookingController.js
-import Booking from '../Models/BookingSchema.js';
+import Booking from '../models/BookingSchema.js';
 import { createCalendarEvent } from './calendarController.js';
 
 /**
