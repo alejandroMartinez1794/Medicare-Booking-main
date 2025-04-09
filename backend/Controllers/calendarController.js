@@ -68,22 +68,25 @@ export const handleGoogleCallback = async (req, res) => {
       { upsert: true, new: true }
     );
 
-    return res.status(200).json({
-      message: '✅ Autenticación con Google exitosa',
-      token,
-      user: {
+    // 🌐 Redirección al frontend con token y user en la URL
+    const frontendRedirect = `http://localhost:5173/google-auth-redirect?token=${token}&user=${encodeURIComponent(
+      JSON.stringify({
         id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
         profilePicture: user.profilePicture || null,
-      },
-    });
+      })
+    )}`;
+
+    return res.redirect(frontendRedirect);
+
   } catch (error) {
     console.error('🔴 Error en handleGoogleCallback:', error);
     return res.status(500).json({ error: 'Error en la autenticación con Google' });
   }
 };
+
 
 /**
  * 🗓️ Crear evento en Google Calendar

@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { token } from '../config';
 
 const useFetchData = (url) => {
     
@@ -11,24 +10,28 @@ const useFetchData = (url) => {
         const fetchData = async () => {
             setLoading(true);
             try {
+                const token = localStorage.getItem('token'); // ✅ mover aquí
+                console.log("🔑 Token desde localStorage (useFetchData):", token);
                 const res = await fetch(url, {
-                    headers: {Authorization : `Bearer ${token}`}
-                })
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+
                 const result = await res.json();
 
-                if(!res.ok) {
-                    throw new Error(result.message + '🤢');
+                if (!res.ok) {
+                    throw new Error(result.message + ' 🤢');
                 }
 
                 setData(result.data);
                 setLoading(false);
-            }   catch (err) {
+            } catch (err) {
                 setLoading(false);
                 setError(err.message);
             }    
         };
+
         fetchData();
-    },[url]);
+    }, [url]);
     
     return {
         data,

@@ -2,7 +2,7 @@
 
 import { google } from 'googleapis';
 import dotenv from 'dotenv';
-import GoogleToken from '../models/GoogleTokenSchema.js'; // Usamos el modelo que ya tienes
+import GoogleToken from '../Models/GoogleTokenSchema.js'; // Usamos el modelo que ya tienes
 
 dotenv.config();
 

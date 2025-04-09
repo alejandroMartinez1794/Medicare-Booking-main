@@ -15,7 +15,7 @@ import { authenticate, restrict } from '../auth/verifyToken.js';
 const router = express.Router();
 
 // Ruta para redirigir al consentimiento de Google
-router.get('/google-auth', authenticate, getGoogleAuthUrl);
+router.get('/google-auth', /*authenticate,*/ getGoogleAuthUrl);
 
 // Callback después de que el usuario autoriza acceso a su Google Calendar
 router.get('/google/callback', handleGoogleCallback);
